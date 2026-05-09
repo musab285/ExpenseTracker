@@ -1,3 +1,2 @@
 release: python manage.py migrate
-
-web: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 0 backend.wsgi:application
+web: gunicorn backend.wsgi:application --bind 0.0.0.0:${PORT:-8000}
