@@ -41,10 +41,12 @@ if not DEBUG and (not SECRET_KEY or SECRET_KEY.startswith('development-key-')):
 
 ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
+
 # Security Settings (Production vs Development)
-# For local development: run `$env:DEBUG='False'; python manage.py check --deploy` to test production settings
+# For local development: run `$env:DEBUG='False'; python manage.py migrate && python manage.py collectstatic --noinput; python manage.py check --deploy` to test production settings
 if not DEBUG:
     # Production: HTTPS/SSL required
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -137,7 +139,7 @@ DATABASES = {
         'USER': os.getenv('user'),
         'PASSWORD': os.getenv('PASSWORD'),
         'HOST': os.getenv('HOST'),
-        'PORT': os.getenv('PORT'),
+        'PORT': os.getenv('DB_PORT', '5432'),
         'OPTIONS': {
             'sslmode': 'require',
         },
