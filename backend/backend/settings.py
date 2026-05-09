@@ -21,6 +21,10 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _csv_env(name, default):
+    return [value.strip() for value in os.getenv(name, default).split(',') if value.strip()]
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -35,7 +39,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'development-key-not-for-production-7c8d9e0
 if not DEBUG and (not SECRET_KEY or SECRET_KEY.startswith('development-key-')):
     raise ValueError("SECRET_KEY must be a secure value in production")
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
 # Security Settings (Production vs Development)
 # For local development: run `$env:DEBUG='False'; python manage.py check --deploy` to test production settings
@@ -188,10 +192,10 @@ AUTH_USER_MODEL = 'api.User'
 
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
-    origin.strip() for origin in os.getenv(
+    origin for origin in _csv_env(
         'CORS_ALLOWED_ORIGINS',
         'http://localhost:3000,http://127.0.0.1:3000'
-    ).split(',')
+    )
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
@@ -208,8 +212,8 @@ CORS_ALLOW_HEADERS = [
 
 # CSRF Configuration
 CSRF_TRUSTED_ORIGINS = [
-    origin.strip() for origin in os.getenv(
+    origin for origin in _csv_env(
         'CSRF_TRUSTED_ORIGINS',
         'http://localhost:3000,http://127.0.0.1:3000'
-    ).split(',')
+    )
 ]
