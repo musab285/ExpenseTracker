@@ -16,6 +16,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { FinanceProvider } from './FinanceContext';
+import { Toaster } from 'sonner';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -56,6 +57,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <AppRoutes />
+        <Toaster position="bottom-right" theme="dark" closeButton />
       </BrowserRouter>
     </AuthProvider>
   );

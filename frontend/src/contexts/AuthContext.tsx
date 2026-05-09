@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { authAPI, setTokens, clearTokens, getAccessToken, storeUser, getStoredUser } from '../services/api';
 import type { User } from '../types';
 
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const u: User = { id: 0, username, email: '' };
     storeUser(u);
     setUser(u);
+    toast.success(`Welcome back, ${username}!`);
   }, []);
 
   const register = useCallback(async (data: RegisterData) => {
@@ -54,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setTokens(loginRes.data.access, loginRes.data.refresh);
     storeUser(u);
     setUser(u);
+    toast.success('Registration successful!');
   }, []);
 
   const logout = useCallback(async () => {
@@ -63,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch { /* ignore */ }
     clearTokens();
     setUser(null);
+    toast.info('Signed out successfully');
   }, []);
 
   return (

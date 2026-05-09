@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { UserCircle, Plus, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { cn, formatCurrency } from '../lib/utils';
@@ -62,6 +63,7 @@ export default function Dashboard() {
           comments: form.comments || undefined,
           timestamp: timestampIso
         });
+        toast.success(`Income "${form.name}" added successfully`);
       } else {
         await createDebt({
           name: form.name,
@@ -71,6 +73,7 @@ export default function Dashboard() {
           comments: form.comments || undefined,
           timestamp: timestampIso
         });
+        toast.success(`Debt "${form.name}" added successfully`);
       }
 
       resetForm();
@@ -78,7 +81,9 @@ export default function Dashboard() {
       refreshAll();
     } catch (err: any) {
       const data = err.response?.data;
-      setError(data ? Object.values(data).flat().join(', ') : 'Failed to save');
+      const msg = data ? Object.values(data).flat().join(', ') : 'Failed to save';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }

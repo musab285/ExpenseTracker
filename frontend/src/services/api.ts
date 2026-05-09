@@ -100,7 +100,7 @@ export const profilesAPI = {
   list: (params?: any) => api.get('/profiles/', { params }),
   create: (data: { accountType: string }) => api.post('/profiles/', data),
   detail: (id: number) => api.get(`/profiles/${id}/`),
-  update: (id: number, data: any) => api.put(`/profiles/${id}/`, data),
+  update: (id: number, data: any) => api.patch(`/profiles/${id}/`, data),
   delete: (id: number) => api.delete(`/profiles/${id}/`),
   summary: (id: number) => api.get(`/profiles/${id}/summary/`),
   monthly: (id: number) => api.get(`/profiles/${id}/monthly/`),
@@ -113,7 +113,7 @@ export const categoriesAPI = {
   list: (params?: any) => api.get('/categories/', { params }),
   create: (data: { name: string }) => api.post('/categories/', data),
   detail: (id: number) => api.get(`/categories/${id}/`),
-  update: (id: number, data: { name: string }) => api.put(`/categories/${id}/`, data),
+  update: (id: number, data: { name: string }) => api.patch(`/categories/${id}/`, data),
   delete: (id: number) => api.delete(`/categories/${id}/`),
 };
 
@@ -127,7 +127,7 @@ export const expensesAPI = {
   create: (data: { profile_id: number; name: string; amount: number; category_id: number; payment_type?: string; ref_id?: string; comments?: string; timestamp?: string }) =>
     api.post('/expenses/', data),
   detail: (id: number) => api.get(`/expenses/${id}/`),
-  update: (id: number, data: any) => api.put(`/expenses/${id}/`, data),
+  update: (id: number, data: any) => api.patch(`/expenses/${id}/`, data),
   delete: (id: number) => api.delete(`/expenses/${id}/`),
 };
 
@@ -137,7 +137,7 @@ export const incomesAPI = {
   create: (data: { name: string; amount: number; profile_id?: number; comments?: string; timestamp?: string }) =>
     api.post('/incomes/', data),
   detail: (id: number) => api.get(`/incomes/${id}/`),
-  update: (id: number, data: any) => api.put(`/incomes/${id}/`, data),
+  update: (id: number, data: any) => api.patch(`/incomes/${id}/`, data),
   delete: (id: number) => api.delete(`/incomes/${id}/`),
 };
 
@@ -147,7 +147,7 @@ export const debtsAPI = {
   create: (data: { name: string; amount: number; is_paid?: boolean; due_date?: string; comments?: string; timestamp?: string }) =>
     api.post('/debts/', data),
   detail: (id: number) => api.get(`/debts/${id}/`),
-  update: (id: number, data: any) => api.put(`/debts/${id}/`, data),
+  update: (id: number, data: any) => api.patch(`/debts/${id}/`, data),
   delete: (id: number) => api.delete(`/debts/${id}/`),
 };
 

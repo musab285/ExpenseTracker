@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, UserCircle } from 'lucide-react';
 import { profilesAPI, expensesAPI } from '../services/api';
@@ -111,14 +112,21 @@ export default function ProfileDashboard() {
         timestamp: timestampIso
       };
 
-      if (editingId) await expensesAPI.update(editingId, payload);
-      else await expensesAPI.create(payload);
+      if (editingId) {
+        await expensesAPI.update(editingId, payload);
+        toast.success(`Expense "${form.name}" updated successfully`);
+      } else {
+        await expensesAPI.create(payload);
+        toast.success(`Expense "${form.name}" added successfully`);
+      }
 
       resetForm(); setModalOpen(false);
       await Promise.all([fetchExpenses(), fetchProfile(), fetchMonthly(), refreshProfiles(), refreshDashboard()]);
     } catch (err: any) {
       const data = err.response?.data;
-      setError(data ? Object.values(data).flat().join(', ') : 'Failed to save');
+      const msg = data ? Object.values(data).flat().join(', ') : 'Failed to save';
+      setError(msg);
+      toast.error(msg);
     } finally { setSubmitting(false); }
   };
 
@@ -126,8 +134,12 @@ export default function ProfileDashboard() {
     if (!confirm('Delete this expense?')) return;
     try {
       await expensesAPI.delete(txId);
+      toast.success('Expense deleted');
       await Promise.all([fetchExpenses(), fetchProfile(), fetchMonthly(), refreshProfiles(), refreshDashboard()]);
-    } catch (err: any) { alert(err.response?.data?.detail || 'Delete failed'); }
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || 'Delete failed';
+      toast.error(msg);
+    }
   };
 
   const inputCls = "w-full bg-surface-container-highest border border-border rounded px-4 py-3 text-white focus:border-primary outline-none transition-colors text-sm";

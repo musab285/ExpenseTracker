@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Bell, Menu, LogOut, User as UserIcon, Calendar, Check } from 'lucide-react';
 import { useFinance } from '../../FinanceContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -117,8 +118,10 @@ export default function TopBar({ onOpenMenu }: TopBarProps) {
                                 try {
                                   await debtsAPI.update(debt.id, { is_paid: true });
                                   setUpcomingDebts(prev => prev.filter(d => d.id !== debt.id));
+                                  toast.success(`Debt "${debt.name}" marked as paid`);
                                 } catch (err) {
                                   console.error('Failed to mark as paid', err);
+                                  toast.error('Failed to update debt');
                                 }
                               }}
                               className="p-1 hover:bg-secondary/20 text-secondary rounded transition-colors"
