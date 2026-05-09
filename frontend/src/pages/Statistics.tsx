@@ -255,7 +255,7 @@ export default function Statistics() {
         </div>
       </div>
 
-      <div className="glass-card rounded-2xl p-10 flex flex-col md:flex-row items-center justify-between gap-10 bg-surface-container-high/50 border-primary/20 transition-all hover:bg-surface-container-high">
+      {/* <div className="glass-card rounded-2xl p-10 flex flex-col md:flex-row items-center justify-between gap-10 bg-surface-container-high/50 border-primary/20 transition-all hover:bg-surface-container-high">
         <div className="flex items-center gap-8">
           <div className="w-14 h-14 rounded bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
             <BarChart3 className="w-7 h-7" />
@@ -269,7 +269,7 @@ export default function Statistics() {
           <button className="flex-1 md:flex-none px-8 py-3 bg-surface-container-highest rounded text-[10px] font-bold uppercase tracking-widest hover:bg-white/5 transition-all text-white">CSV</button>
           <button className="flex-1 md:flex-none px-10 py-3 bg-primary text-black rounded hover:brightness-110 active:scale-95 transition-all font-bold text-[10px] uppercase tracking-[0.2em] gold-glow-strong">Generate PDF</button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
