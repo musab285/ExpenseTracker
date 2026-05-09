@@ -45,16 +45,15 @@ ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 # Security Settings (Production vs Development)
 # For local development: run `$env:DEBUG='False'; python manage.py migrate && python manage.py collectstatic --noinput; python manage.py check --deploy` to test production settings
 if not DEBUG:
-    # Production: HTTPS/SSL required
+    # Production: HTTPS/SSL handled by Railway proxy
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = False  # Disable temporarily to fix redirect loop
+    SECURE_HSTS_SECONDS = 0      # Disable HSTS during debugging
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 else:
-    # Development: Allow HTTP (warnings are expected locally)
     SECURE_SSL_REDIRECT = False
     SECURE_HSTS_SECONDS = 0
     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
@@ -193,12 +192,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'api.User'
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = [
-    origin for origin in _csv_env(
-        'CORS_ALLOWED_ORIGINS',
-        'http://localhost:3000,http://127.0.0.1:3000'
-    )
-]
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     "accept",
