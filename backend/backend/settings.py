@@ -41,6 +41,11 @@ if not DEBUG and (not SECRET_KEY or SECRET_KEY.startswith('development-key-')):
 
 ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
+# CRITICAL: If we are on Railway, ensure the domain is allowed even if the env var is messy
+if not DEBUG:
+    ALLOWED_HOSTS.append('.railway.app')
+    ALLOWED_HOSTS.append('expensetracker-production-34d1.up.railway.app')
+
 
 # Security Settings (Production vs Development)
 # For local development: run `$env:DEBUG='False'; python manage.py migrate && python manage.py collectstatic --noinput; python manage.py check --deploy` to test production settings
