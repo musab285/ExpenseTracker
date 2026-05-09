@@ -205,8 +205,9 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-WHITENOISE_USE_FINDERS = True  # Look for files in static folders if STATIC_ROOT is empty
-WHITENOISE_MANIFEST_STRICT = False # Don't crash if a file is missing from manifest
+WHITENOISE_USE_FINDERS = True 
+WHITENOISE_MANIFEST_STRICT = False
+WHITENOISE_AUTOREFRESH = True  # Add this to help with missing directories
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
