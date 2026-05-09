@@ -39,12 +39,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'development-key-not-for-production-7c8d9e0
 if not DEBUG and (not SECRET_KEY or SECRET_KEY.startswith('development-key-')):
     raise ValueError("SECRET_KEY must be a secure value in production")
 
-ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', 'localhost,127.0.0.1')
-
-# CRITICAL: If we are on Railway, ensure the domain is allowed even if the env var is messy
-if not DEBUG:
-    ALLOWED_HOSTS.append('.railway.app')
-    ALLOWED_HOSTS.append('expensetracker-production-34d1.up.railway.app')
+ALLOWED_HOSTS = ['*']
 
 
 # Security Settings (Production vs Development)
