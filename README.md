@@ -1,6 +1,6 @@
-# ExpenseTracker — Project Documentation
+# ExpenseTracker (DigiKatib) — Project Documentation
 
-> A backend-only Django REST API for personal finance management — tracking expenses, incomes, debts, and multi-profile budgeting with JWT-based authentication.
+> A full-stack personal finance management application. The backend is a Django REST API with JWT authentication and PostgreSQL; the frontend is a React + TypeScript SPA with a dark premium ledger UI, real-time analytics, and multi-profile budgeting.
 
 ---
 
@@ -11,89 +11,152 @@
 3. [Project Structure](#3-project-structure)
 4. [Data Models](#4-data-models)
 5. [API Endpoints](#5-api-endpoints)
-6. [Authentication & Security](#6-authentication--security)
-7. [Filtering & Pagination](#7-filtering--pagination)
-8. [Key Features](#8-key-features)
-9. [User Workflows](#9-user-workflows)
-10. [Deployment](#10-deployment)
-11. [Environment Variables](#11-environment-variables)
-12. [Development Setup](#12-development-setup)
-13. [Testing](#13-testing)
+6. [Frontend Architecture](#6-frontend-architecture)
+7. [Authentication & Security](#7-authentication--security)
+8. [State Management](#8-state-management)
+9. [Filtering & Pagination](#9-filtering--pagination)
+10. [Key Features](#10-key-features)
+11. [User Workflows](#11-user-workflows)
+12. [Deployment](#12-deployment)
+13. [Environment Variables](#13-environment-variables)
+14. [Development Setup](#14-development-setup)
+15. [Testing](#15-testing)
+16. [Known Issues & Notes](#16-known-issues--notes)
 
 ---
 
 ## 1. Project Overview
 
-**ExpenseTracker** is a RESTful API built with Django and Django REST Framework (DRF). It allows users to:
+**ExpenseTracker**, branded as **DigiKatib**, is a full-stack budgeting and finance tracking application. Users can manage multiple financial profiles, log expenses and incomes, track debts, and visualize their spending patterns through charts and monthly breakdowns.
 
-- Register and authenticate with JWT tokens
-- Create multiple financial **profiles** (e.g., personal, business)
-- Log **expenses** and **incomes** per profile
-- Track **debts** separately
-- Organize spending via **categories**
-- View **dashboard summaries** and **monthly breakdowns**
+**What it does:**
+- Register/login with JWT-based authentication
+- Create and manage multiple **financial profiles** (personal, business, etc.)
+- Log categorized **expenses** and **incomes** per profile — balances update automatically via Django signals
+- Track **debts** with due dates and paid/unpaid status
+- View a **dashboard** with cross-profile totals, net balance, and recent activity
+- Drill into **monthly analytics** with category breakdowns and daily spending trends
+- Browse a **unified transactions ledger** across all entry types
 
-The API is designed to be consumed by a frontend SPA (React/Next.js) or a mobile app. No frontend code is included in this repository.
+**Repository:** `musab285/ExpenseTracker`
 
 ---
 
 ## 2. Tech Stack
 
+### Backend
+
 | Layer | Technology |
 |---|---|
-| Framework | Django 5.2.5 + Django REST Framework 3.16.1 |
+| Framework | Django 5 + Django REST Framework |
 | Authentication | `djangorestframework-simplejwt` (JWT) |
-| Database | PostgreSQL (`psycopg2-binary`) |
+| Database | PostgreSQL via `DATABASE_URL` (SQLite fallback for local) |
 | Filtering | `django-filter` |
 | CORS | `django-cors-headers` |
-| Static Files | WhiteNoise |
-| App Server | Gunicorn (prod) / Waitress |
+| Static Files | WhiteNoise (compressed manifest) |
+| App Server | Gunicorn (production) |
 | Config | `python-dotenv`, `dj-database-url` |
-| Deployment | Railway (configured via Procfile) |
+
+### Frontend
+
+| Layer | Technology |
+|---|---|
+| Framework | React 19 + TypeScript + Vite |
+| Routing | `react-router-dom` |
+| State | React Context API (`AuthContext` + `FinanceContext`) |
+| HTTP Client | Axios with JWT bearer + refresh retry queue |
+| UI / Styling | Tailwind CSS v4 |
+| Animations | `motion` |
+| Icons | `lucide-react` |
+| Charts | `recharts` |
+| Notifications | `sonner` (toast library) |
 
 ---
 
 ## 3. Project Structure
 
 ```
-backend/
-├── manage.py                    # Django management entrypoint
-├── requirements.txt             # Python dependencies
-├── runtime.txt                  # Python version pin
-├── Procfile                     # Railway/Heroku deployment commands
+ExpenseTracker/
+├── DEPLOYMENT.md
 │
-├── backend/                     # Django project config package
-│   ├── settings.py              # All settings (env-driven)
-│   ├── urls.py                  # Root URL configuration
-│   ├── wsgi.py                  # WSGI entrypoint (Gunicorn)
-│   └── asgi.py                  # ASGI entrypoint
+├── backend/                          # Django REST API
+│   ├── manage.py
+│   ├── requirements.txt
+│   ├── runtime.txt
+│   ├── Procfile
+│   ├── backend/                      # Django project config
+│   │   ├── settings.py               # All settings (env-driven)
+│   │   ├── urls.py                   # Root URL configuration
+│   │   ├── wsgi.py                   # WSGI entrypoint (Gunicorn)
+│   │   └── asgi.py
+│   └── api/                          # Core domain app
+│       ├── models.py                 # User, Profile, Category, Expense, Income, Debt
+│       ├── serializers.py            # DRF serializers (validation + transformation)
+│       ├── views.py                  # API views (ListCreate, RetrieveUpdateDestroy, APIView)
+│       ├── urls.py                   # App-level URL patterns
+│       ├── filters.py                # django-filter FilterSets
+│       ├── signals.py                # Auto balance update on expense/income save
+│       ├── tests.py                  # Test suite (placeholder)
+│       └── migrations/               # 11 migration files
 │
-└── api/                         # Core application
-    ├── models.py                # Data models (User, Profile, Category, Expense, Income, Debt)
-    ├── serializers.py           # DRF serializers for validation & transformation
-    ├── views.py                 # API views (ListCreate, RetrieveUpdateDestroy, APIView)
-    ├── urls.py                  # App-level URL patterns
-    ├── filters.py               # django-filter FilterSets
-    ├── tests.py                 # Test suite
-    └── migrations/              # 11 migration files tracking schema evolution
+└── frontend/                         # React + Vite SPA
+    └── src/
+        ├── pages/                    # Feature pages
+        │   ├── Dashboard.tsx         # Overview: totals, activity, quick actions
+        │   ├── Profiles.tsx          # Create/list/delete accounts
+        │   ├── ProfileDashboard.tsx  # Per-profile view with tabs
+        │   ├── Transactions.tsx      # Unified ledger (expense+income+debt)
+        │   ├── Debts.tsx             # Debt table with status toggle
+        │   ├── Statistics.tsx        # Cross-profile trend charts
+        │   └── profile/              # Profile tab sub-pages
+        │       ├── Summary.tsx       # Current month summary + balance
+        │       ├── Transactions.tsx  # Profile-scoped activity
+        │       └── Monthly.tsx       # Month-by-month breakdown
+        ├── components/
+        │   ├── layout/
+        │   │   ├── Sidebar.tsx       # Navigation sidebar
+        │   │   ├── TopBar.tsx        # Balance display, notifications, profile menu
+        │   │   └── AppLayout.tsx     # Protected shell (Sidebar + TopBar + Outlet)
+        │   └── ui/
+        │       └── Modal.tsx         # Reusable modal component
+        ├── contexts/
+        │   └── AuthContext.tsx       # Auth state: login/register/logout
+        ├── FinanceContext.tsx         # Finance state + CRUD orchestration
+        ├── services/
+        │   └── api.ts                # Axios client, interceptors, endpoint wrappers
+        └── lib/
+            └── utils.ts              # cn() class merge, formatCurrency (USD)
 ```
 
-### URL Routing
+### Frontend Route Map
+
+| Route | Page | Access |
+|---|---|---|
+| `/login` | Login | Public |
+| `/register` | Register | Public |
+| `/` | Dashboard | Protected |
+| `/profiles` | Profiles list | Protected |
+| `/profiles/:id` | Profile Dashboard (Summary / Transactions / Monthly tabs) | Protected |
+| `/transactions` | Unified ledger | Protected |
+| `/debts` | Debt tracker | Protected |
+| `/stats` | Cross-profile analytics + charts | Protected |
+
+### Backend URL Routing
 
 All routes are mounted at the **root** (no `/api/` prefix):
 
 ```
-/              → health check ("DigiKatib Backend OK")
-/health/       → health check ("OK")
-/register/     → user registration
+/              → Health check ("DigiKatib Backend OK")
+/health/       → Health check ("OK")
+/register/     → User registration
 /login/        → JWT login
 /logout/       → JWT logout (blacklist refresh token)
-/profiles/     → profile management
-/categories/   → category management
-/expenses/     → expense management
-/incomes/      → income management
-/debts/        → debt management
-/dashboard/    → aggregated summary
+/profiles/     → Profile management
+/categories/   → Category management
+/expenses/     → Expense management
+/incomes/      → Income management
+/debts/        → Debt management
+/dashboard/    → Aggregated summary
 /admin/        → Django admin panel
 ```
 
@@ -102,19 +165,19 @@ All routes are mounted at the **root** (no `/api/` prefix):
 ## 4. Data Models
 
 ### User
-Extends Django's `AbstractUser`. No extra fields — the built-in username/password/email fields are used.
+Extends Django's `AbstractUser`. Uses built-in `username` / `password` / `email` fields.
 
 ### Profile
-Represents a financial account (e.g., "Personal", "Business"). A single user can have **multiple profiles**.
+Represents a financial account. A user can have **multiple profiles** (e.g., "Personal", "Business"). Balance is maintained automatically via Django signals when expenses or incomes are created.
 
 | Field | Type | Notes |
 |---|---|---|
-| `user` | FK → User | Owner of this profile |
+| `user` | FK → User | Owner |
 | `accountType` | CharField(20) | e.g., "personal", "business" |
-| `balance` | DecimalField(12,2) | Current balance; default 0 |
+| `balance` | DecimalField(12,2) | Running balance; updated by signals |
 
 ### Category
-User-defined spending categories (e.g., "Food", "Rent"). Unique per user.
+User-defined spending labels. Unique per user.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -122,11 +185,11 @@ User-defined spending categories (e.g., "Food", "Rent"). Unique per user.
 | `name` | CharField(50) | Unique per user (`unique_together`) |
 
 ### Expense
-Individual spending entries, linked to a profile and a category. Supports **soft delete**.
+Individual spending entries linked to a profile and category. Supports **soft delete**.
 
 | Field | Type | Notes |
 |---|---|---|
-| `profile` | FK → Profile | Which profile this expense belongs to |
+| `profile` | FK → Profile | Profile this expense belongs to |
 | `name` | CharField(100) | Description |
 | `amount` | DecimalField(10,2) | Spending amount |
 | `category` | FK → Category | Spending category |
@@ -134,30 +197,34 @@ Individual spending entries, linked to a profile and a category. Supports **soft
 | `ref_id` | CharField(100) | Optional reference ID |
 | `timestamp` | DateTimeField | Defaults to now |
 | `comments` | TextField | Optional notes |
-| `is_deleted` | BooleanField | Soft delete flag (default: False) |
+| `is_deleted` | BooleanField | Soft delete flag |
+
+> **Signal behavior:** On expense create → profile balance is debited. On hard delete → balance is reversed. Soft delete does **not** trigger a signal reversal.
 
 ### Income
-Income entries linked to both a user and a profile.
+Income entries linked to a user and a profile.
 
 | Field | Type | Notes |
 |---|---|---|
 | `user` | FK → User | Owner |
-| `profile` | FK → Profile | Distribution target |
+| `profile` | FK → Profile | Profile receiving the income |
 | `name` | CharField(100) | Description |
 | `amount` | DecimalField(10,2) | Must be positive |
 | `timestamp` | DateTimeField | Defaults to now |
 | `comments` | TextField | Optional |
 | `is_deleted` | BooleanField | Soft delete flag |
 
+> **Signal behavior:** On income create → profile balance is credited.
+
 ### Debt
-Standalone debt tracking — not linked to a profile, just to the user.
+Standalone debt entries linked to the user only, **not** to a profile. Debt amounts do **not** affect profile balances (signal handlers are intentional no-ops).
 
 | Field | Type | Notes |
 |---|---|---|
 | `user` | FK → User | Owner |
 | `name` | CharField(100) | Description (e.g., "Car loan") |
 | `amount` | DecimalField(12,2) | Must be positive |
-| `is_paid` | BooleanField | Paid-off flag (default: False) |
+| `is_paid` | BooleanField | Paid-off flag |
 | `due_date` | DateField | Optional |
 | `timestamp` | DateTimeField | Defaults to now |
 | `comments` | TextField | Optional |
@@ -171,7 +238,7 @@ User
  │    ├── Expense (many)  → Category
  │    └── Income (many)
  ├── Category (many)
- └── Debt (many)
+ └── Debt (many)          ← not linked to Profile; no balance effect
 ```
 
 ---
@@ -182,9 +249,9 @@ User
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| POST | `/register/` | Public | Register a new user |
-| POST | `/login/` | Public | Get JWT access + refresh tokens |
-| POST | `/logout/` | Required | Blacklist refresh token |
+| POST | `/register/` | Public | Create a new user account |
+| POST | `/login/` | Public | Get JWT `access` + `refresh` tokens |
+| POST | `/logout/` | Required | Blacklist the refresh token |
 
 **Login Response:**
 ```json
@@ -202,13 +269,14 @@ User
 |---|---|---|
 | GET | `/profiles/` | List all profiles for current user |
 | POST | `/profiles/` | Create a new profile |
-| GET | `/profiles/<pk>/` | Get profile detail |
+| GET | `/profiles/<pk>/` | Profile detail |
 | PUT/PATCH | `/profiles/<pk>/` | Update profile |
 | DELETE | `/profiles/<pk>/` | Delete profile |
-| GET | `/profiles/<pk>/summary/` | Monthly summary + current balance |
-| GET | `/profiles/<pk>/monthly/` | All months with income/expense totals |
-| GET | `/profiles/<pk>/monthly/<year>/<month>/` | Detailed monthly report |
-| GET/POST | `/profiles/<pk>/expenses/` | List/create expenses for this profile |
+| GET | `/profiles/<pk>/summary/` | Current month income/expense summary + balance |
+| GET | `/profiles/<pk>/monthly/` | All months with aggregated income/expense/savings |
+| GET | `/profiles/<pk>/monthly/<year>/<month>/` | Category breakdown + daily spending for a month |
+| GET/POST | `/profiles/<pk>/expenses/` | List/create expenses scoped to this profile |
+| GET/PUT/PATCH/DELETE | `/profiles/<pk>/expenses/<exp_id>/` | Expense detail within profile context |
 
 ---
 
@@ -216,7 +284,7 @@ User
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/categories/` | List all categories for current user |
+| GET | `/categories/` | List all user categories |
 | POST | `/categories/` | Create a category |
 | GET/PUT/PATCH/DELETE | `/categories/<pk>/` | Detail, update, delete |
 
@@ -229,7 +297,7 @@ User
 | GET | `/expenses/` | List expenses (filterable) |
 | POST | `/expenses/` | Create an expense |
 | GET/PUT/PATCH | `/expenses/<pk>/` | Detail and update |
-| DELETE | `/expenses/<pk>/` | Soft delete (sets `is_deleted=True`) |
+| DELETE | `/expenses/<pk>/` | Soft delete (`is_deleted=True`) |
 
 ---
 
@@ -257,38 +325,135 @@ User
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/dashboard/` | Aggregated totals: income, expenses, debts, net balance, recent transactions |
+| GET | `/dashboard/` | Cross-profile totals (income, expenses, debts, net balance) + recent merged ledger |
 
 ---
 
-## 6. Authentication & Security
+## 6. Frontend Architecture
+
+### Application Shell
+
+Public routes (`/login`, `/register`) are accessible without a token. All other routes are wrapped by a `ProtectedRoute` component that redirects unauthenticated users to `/login`.
+
+Authenticated routes render inside `AppLayout`, which provides:
+- **Sidebar** — main navigation (Dashboard, Profiles, Transactions, Debts, Stats)
+- **TopBar** — shows current net balance, notification bell (upcoming/overdue debts), and a profile/logout menu
+- **Outlet** — renders the active page
+
+### Pages & Responsibilities
+
+**Dashboard (`/`)**
+- Cross-profile totals: total income, total expenses, total debt, net balance
+- Merged recent activity feed (expenses + incomes + debts)
+- Quick-add buttons for income and debt entries
+- Account cards linking to individual profile dashboards
+
+**Profiles (`/profiles`)**
+- Lists all financial profiles as cards
+- Create new profiles with an account type
+- Delete profiles
+
+**Profile Dashboard (`/profiles/:id`)**
+Three-tab interface per profile:
+- **Summary tab** — current month income vs. expenses, current balance, savings rate
+- **Transactions tab** — filterable list of expenses and incomes for this profile
+- **Monthly tab** — month selector with category breakdown and daily spending chart
+
+**Transactions (`/transactions`)**
+- Unified ledger combining expenses, incomes, and debts across all profiles
+- Filter and search support
+- Delete entries; mark debts as paid directly from the list
+
+**Debts (`/debts`)**
+- Table view of all debts with due date and paid/unpaid status
+- Toggle paid status inline
+- Soft delete entries
+
+**Statistics (`/stats`)**
+- Cross-profile trend analytics
+- Charts for spending patterns over time (powered by `recharts`)
+
+### Service Layer (`src/services/api.ts`)
+
+The Axios client is configured with:
+- **Base URL** from `VITE_API_URL` environment variable
+- **Request interceptor** — attaches `Authorization: Bearer <access_token>` to every outgoing request
+- **Response interceptor** — on `401 Unauthorized`, automatically attempts to refresh the access token using the stored refresh token, then replays the failed request. Concurrent failed requests are queued and replayed together once the token is refreshed (preventing race conditions)
+
+Domain-specific client modules:
+
+| Module | Covers |
+|---|---|
+| `authAPI` | `/register/`, `/login/`, `/logout/` |
+| `dashboardAPI` | `/dashboard/` |
+| `profilesAPI` | `/profiles/` and all nested routes |
+| `categoriesAPI` | `/categories/` |
+| `expensesAPI` | `/expenses/` |
+| `incomesAPI` | `/incomes/` |
+| `debtsAPI` | `/debts/` |
+
+### UI System
+
+- **Theme:** Dark premium ledger aesthetic — gold, green, and rose accents on a dark base
+- **Styling:** Tailwind CSS v4
+- **Animations:** `motion` for page/component transitions
+- **Toasts:** `sonner` for success/error feedback on mutations
+- **Currency:** `formatCurrency()` helper in `utils.ts` (USD)
+- **Class merging:** `cn()` combining `clsx` + `tailwind-merge`
+
+---
+
+## 7. Authentication & Security
 
 ### JWT Flow
 
-1. User registers via `POST /register/`
-2. User logs in via `POST /login/` → receives `access` (30 min) and `refresh` (7 days) tokens
-3. All protected requests include: `Authorization: Bearer <access_token>`
-4. When the access token expires, use `POST` with the refresh token to get a new one (SimpleJWT's built-in `/token/refresh/` or custom flow)
-5. Logout via `POST /logout/` with the refresh token — it gets **blacklisted** (requires `rest_framework_simplejwt.token_blacklist` in `INSTALLED_APPS`)
+```
+1. POST /register/   → create account (frontend auto-logs in after success)
+2. POST /login/      → receive access token (30 min) + refresh token (7 days)
+3. All requests      → Authorization: Bearer <access_token>
+4. Token expiry      → Axios interceptor calls /token/refresh/ automatically
+5. POST /logout/     → refresh token blacklisted; user session ends
+```
 
-### Token Lifetimes
+### Token Storage (Frontend)
+
+Tokens and the user object are persisted in **`localStorage`** and bootstrapped into `AuthContext` on app load, so users stay logged in across page refreshes.
 
 | Token | Lifetime |
 |---|---|
 | Access | 30 minutes |
 | Refresh | 7 days |
 
-### Ownership Enforcement
+### Ownership Enforcement (Backend)
 
-Serializers validate that the requesting user owns the resources they reference (e.g., a profile they attach an expense to). This prevents cross-user data access at the serializer layer.
+Serializers validate that the requesting user owns all resources they reference (e.g., the profile an expense is attached to). Cross-user data access is blocked at the serializer layer before any database write occurs.
 
 ### Soft Deletes
 
-`Expense`, `Income`, and `Debt` are never hard-deleted. Instead, `is_deleted=True` is set. Clients should filter out soft-deleted records unless reviewing history.
+`Expense`, `Income`, and `Debt` records are never hard-deleted — `is_deleted=True` is set instead. All queries exclude soft-deleted records by default. Financial history is preserved for auditing.
 
 ---
 
-## 7. Filtering & Pagination
+## 8. State Management
+
+### `AuthContext` (`src/contexts/AuthContext.tsx`)
+
+Global authentication state:
+- Bootstraps stored token + user from `localStorage` on initial load
+- Exposes `login()`, `register()`, and `logout()` functions
+- After successful registration, automatically logs the user in (no double form flow)
+- Triggers `sonner` toasts for auth feedback (success/error)
+
+### `FinanceContext` (`src/FinanceContext.tsx`)
+
+Central orchestrator for financial data:
+- Loads profiles, categories, and dashboard data on mount
+- Exposes CRUD actions: `createProfile()`, `createCategory()`, `createExpense()`, `createIncome()`, `createDebt()`
+- After any mutation, automatically re-fetches the dashboard and relevant profile data so balances and totals stay in sync without a page reload
+
+---
+
+## 9. Filtering & Pagination
 
 ### Pagination
 
@@ -296,12 +461,10 @@ All list views are paginated at **20 items per page** (DRF `PageNumberPagination
 
 ### Filters (`api/filters.py`)
 
-Each resource supports `django-filter` FilterSets:
-
 | Resource | Filterable Fields |
 |---|---|
 | Expense | `profile`, `category`, `payment_type`, min/max `amount`, date range (`timestamp`) |
-| Income | `profile`, min/max `amount`, date range |
+| Income | `profile`, min/max `amount`, date range (`timestamp`) |
 | Debt | `is_paid`, min/max `amount`, `due_date` range |
 
 Example query:
@@ -309,124 +472,159 @@ Example query:
 GET /expenses/?category=3&min_amount=500&timestamp_after=2025-01-01
 ```
 
+The frontend passes these as query parameters through the respective API wrapper modules.
+
 ---
 
-## 8. Key Features
+## 10. Key Features
 
-### Multi-Profile Support
-A single user account can manage multiple financial profiles — useful for separating personal and business finances, or tracking finances for different family members.
+### Multi-Profile Budgeting
+One user account can manage multiple independent financial profiles. Each profile has its own running balance, updated automatically by Django signals.
+
+### Auto Balance via Signals
+Django `post_save` signals on `Expense` and `Income` keep profile balances accurate:
+- Create expense → profile balance debited
+- Create income → profile balance credited
+- Hard delete → balance reversed
+- Debt entries have intentional no-op signals (informational only, no balance effect)
 
 ### Monthly Analytics
-- `/profiles/<pk>/monthly/` — returns a list of all months that have activity, with aggregated income and expense totals per month.
-- `/profiles/<pk>/monthly/<year>/<month>/` — returns a drill-down: expenses broken down by category and daily spending patterns.
+- `GET /profiles/<pk>/monthly/` — all months with activity, including aggregated income, expenses, and savings
+- `GET /profiles/<pk>/monthly/<year>/<month>/` — category breakdown + daily spending; rendered as pie and bar charts on the frontend Monthly tab
 
 ### Dashboard Aggregation
-`/dashboard/` gives a bird's-eye view across **all profiles** for the current user:
-- Total income, total expenses, total debt
-- Net balance
-- Recent transactions
+`GET /dashboard/` provides a cross-profile summary: total income, total expenses, total debt, net balance, and a merged recent transactions ledger.
+
+### Unified Transactions Ledger
+The `/transactions` page merges all financial entry types into one chronological feed with filtering and inline actions (delete, mark debt paid).
+
+### Token Refresh Queue
+The Axios interceptor queues concurrent `401` responses, refreshes the token once, then replays all queued requests — preventing race conditions when multiple requests fail simultaneously at token expiry.
+
+### Debt Notifications
+The TopBar notification bell surfaces upcoming or overdue debts as at-a-glance alerts without navigating to the Debts page.
 
 ### Soft Deletes
-Records are never lost — they are flagged with `is_deleted=True`. This preserves financial history and allows for potential restore/audit functionality.
-
-### Category Management
-Users define their own spending categories. Each category is unique per user, allowing fully customized budgeting taxonomies.
+Records flagged with `is_deleted=True` are excluded from all queries. Financial history is preserved and recoverable.
 
 ---
 
-## 9. User Workflows
+## 11. User Workflows
 
 ### Workflow 1: New User Onboarding
 
 ```
-1. POST /register/         → create account
-2. POST /login/            → get access + refresh tokens
-3. POST /categories/       → create categories (Food, Rent, Transport, etc.)
-4. POST /profiles/         → create a profile (e.g., "Personal - Savings")
+Frontend                                Backend
+──────────────────────────────────────────────────────────
+/register → fill form        →  POST /register/   (create user)
+                             →  POST /login/       (auto-login)
+→ Redirect to Dashboard
+→ Create categories (modal)  →  POST /categories/
+→ Create first profile       →  POST /profiles/
 ```
 
 ### Workflow 2: Logging a Daily Expense
 
 ```
-1. POST /expenses/
-   Body: { "profile": 1, "name": "Groceries", "amount": 2500, "category": 3 }
-
-   → Expense is created and linked to the profile
-   → Profile balance is updated accordingly
+Frontend                                Backend
+──────────────────────────────────────────────────────────
+Profile Dashboard → Transactions tab
+→ "Add Expense"              →  POST /expenses/
+                                 Signal: debit profile balance
+→ FinanceContext re-fetches dashboard + profile summary
+→ Balance in TopBar updates instantly
 ```
 
 ### Workflow 3: Checking Monthly Spending
 
 ```
-1. GET /profiles/1/monthly/
-   → See all months with activity (e.g., ["2025-01", "2025-02", ...])
-
-2. GET /profiles/1/monthly/2025/4/
-   → April breakdown:
-     - Expenses by category (Food: 8000, Transport: 2000, etc.)
-     - Daily spending trend
+Frontend                                Backend
+──────────────────────────────────────────────────────────
+Profile Dashboard → Monthly tab
+→ Load month list            →  GET /profiles/1/monthly/
+→ Select April               →  GET /profiles/1/monthly/2025/4/
+→ Category pie chart renders (recharts)
+→ Daily spending bar chart renders
 ```
 
 ### Workflow 4: Tracking a Debt
 
 ```
-1. POST /debts/
-   Body: { "name": "Student Loan", "amount": 150000, "due_date": "2026-01-01" }
-
-2. GET /dashboard/
-   → Total debt shown in summary
-
-3. PATCH /debts/1/
-   Body: { "is_paid": true }
-   → Mark as paid off
+Frontend                                Backend
+──────────────────────────────────────────────────────────
+Dashboard → "Quick Add Debt"
+→ Fill form                  →  POST /debts/
+→ Debt appears in /debts table
+→ TopBar bell alerts on due date
+→ Mark as paid (inline)      →  PATCH /debts/<id>/ { is_paid: true }
 ```
 
 ### Workflow 5: Recording Income
 
 ```
-1. POST /incomes/
-   Body: { "profile": 1, "name": "Freelance Project", "amount": 50000 }
-
-2. GET /profiles/1/summary/
-   → Updated balance reflected; income included in monthly totals
+Frontend                                Backend
+──────────────────────────────────────────────────────────
+Dashboard → "Quick Add Income"
+→ Select profile + amount    →  POST /incomes/
+                                 Signal: credit profile balance
+→ Dashboard net balance updates
+→ Profile summary reflects new income
 ```
 
-### Workflow 6: Token Refresh & Logout
+### Workflow 6: Automatic Token Refresh
 
 ```
-1. Access token expires after 30 minutes
-2. POST /token/refresh/ with refresh token → new access token
-3. POST /logout/ with refresh token → token blacklisted, session ends
+Access token expires (30 min)
+→ Any API call returns 401
+→ Axios interceptor catches 401, queues the request
+→ POST /token/refresh/ with stored refresh token
+→ New access token stored in localStorage
+→ All queued requests replayed transparently
+→ User never sees an error or gets redirected
+```
+
+### Workflow 7: Logout
+
+```
+Frontend                                Backend
+──────────────────────────────────────────────────────────
+TopBar → Profile menu → Logout
+→ POST /logout/ { refresh }  →  Refresh token blacklisted
+→ localStorage cleared (tokens + user)
+→ Redirect to /login
 ```
 
 ---
 
-## 10. Deployment
+## 12. Deployment
 
-The project is configured for **Railway** but works on any platform supporting Python + PostgreSQL.
+The backend is configured for **Railway** but runs on any platform supporting Python + PostgreSQL. The frontend is a static Vite build deployable to Vercel, Netlify, or Railway's static hosting.
 
-### Procfile
+### Backend — Procfile
 
 ```
 release: python manage.py migrate
 web: gunicorn backend.wsgi:application --bind 0.0.0.0:${PORT:-8000} --access-logfile - --error-logfile - --log-level info
 ```
 
-### Build Steps
+### Backend — Build Steps
 
 ```bash
-# 1. Install dependencies
 pip install -r requirements.txt
-
-# 2. Apply migrations (handled by Procfile release step)
-python manage.py migrate
-
-# 3. Collect static files (required for WhiteNoise)
-python manage.py collectstatic --noinput
-
-# 4. Start server
+python manage.py migrate                      # handled by Procfile release step
+python manage.py collectstatic --noinput      # required for WhiteNoise
 gunicorn backend.wsgi:application
 ```
+
+### Frontend — Build Steps
+
+```bash
+cd frontend
+npm install
+npm run build       # outputs to dist/
+```
+
+Deploy the `dist/` folder as a static site. Configure your hosting to serve `index.html` for all routes (required for client-side routing).
 
 ### Health Checks
 
@@ -437,7 +635,9 @@ gunicorn backend.wsgi:application
 
 ---
 
-## 11. Environment Variables
+## 13. Environment Variables
+
+### Backend
 
 | Variable | Type | Required in Prod | Description |
 |---|---|---|---|
@@ -445,111 +645,108 @@ gunicorn backend.wsgi:application
 | `SECRET_KEY` | string | Yes | Secure Django secret key |
 | `ALLOWED_HOSTS` | CSV | Yes | Hostnames only, no scheme (e.g., `myapp.railway.app,localhost`) |
 | `CSRF_TRUSTED_ORIGINS` | CSV | Yes | Origins with scheme (e.g., `https://myapp.railway.app`) |
-| `CORS_ALLOWED_ORIGINS` | CSV | Yes | Frontend origins with scheme |
-| `DATABASE` | string | Yes | PostgreSQL DB name |
-| `USER` | string | Yes | DB username |
-| `PASSWORD` | string | Yes | DB password |
-| `HOST` | string | Yes | DB host |
-| `PORT` | string | Yes | DB port |
+| `CORS_ALLOWED_ORIGINS` | CSV | Yes | Frontend origin with scheme |
+| `DATABASE_URL` | string | Yes | Full PostgreSQL connection URL (parsed by `dj-database-url`) |
 
-> **Note:** `ALLOWED_HOSTS` takes hostnames only. `CSRF_TRUSTED_ORIGINS` and `CORS_ALLOWED_ORIGINS` require the full scheme (`https://`).
+> `ALLOWED_HOSTS` takes hostnames only. `CSRF_TRUSTED_ORIGINS` and `CORS_ALLOWED_ORIGINS` require the full `https://` scheme.
+
+### Frontend
+
+| Variable | Description |
+|---|---|
+| `VITE_API_URL` | Base URL of the deployed backend (e.g., `https://myapp.railway.app`) |
 
 ---
 
-## 12. Development Setup
+## 14. Development Setup
+
+### Backend
 
 ```bash
-# Clone the repo
-git clone <repo-url>
-cd backend
+git clone https://github.com/musab285/ExpenseTracker.git
+cd ExpenseTracker/backend
 
-# Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate       # Linux/macOS
-venv\Scripts\activate          # Windows
+source venv/bin/activate          # Windows: venv\Scripts\activate
 
-# Install dependencies
 pip install -r requirements.txt
 
-# Set up .env file
-cp .env.example .env           # Edit with your local values
-
-# Run migrations
+cp .env.example .env              # edit with local values
 python manage.py migrate
-
-# Create a superuser (optional, for admin access)
-python manage.py createsuperuser
-
-# Start development server
-python manage.py runserver
+python manage.py createsuperuser  # optional, for Django admin
+python manage.py runserver        # runs on http://localhost:8000
 ```
 
-### Recommended `.env` for local dev
-
+**Sample `.env` for local backend:**
 ```env
 DEBUG=True
 SECRET_KEY=any-local-dev-key
 ALLOWED_HOSTS=localhost,127.0.0.1
-CSRF_TRUSTED_ORIGINS=http://localhost:3000
-CORS_ALLOWED_ORIGINS=http://localhost:3000
-DATABASE=expensetracker_db
-USER=postgres
-PASSWORD=yourpassword
-HOST=localhost
-PORT=5432
+CSRF_TRUSTED_ORIGINS=http://localhost:5173
+CORS_ALLOWED_ORIGINS=http://localhost:5173
+DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/expensetracker_db
+```
+
+### Frontend
+
+```bash
+cd ExpenseTracker/frontend
+
+npm install
+
+echo "VITE_API_URL=http://localhost:8000" > .env
+
+npm run dev       # runs on http://localhost:5173
 ```
 
 ---
 
-## 13. Testing
+## 15. Testing
+
+### Backend
 
 ```bash
-# Run all tests
 python manage.py test
 
-# Check deployment config (when DEBUG=False)
-python manage.py check --deploy
+# Validate deployment configuration
+python manage.py check --deploy    # run with DEBUG=False
 ```
 
-### Recommended Test Coverage
+### Recommended Backend Test Coverage
 
 | Area | What to Test |
 |---|---|
-| Serializers | Validation rules (positive amounts, ownership checks) |
-| Auth flow | Register → Login → Token refresh → Logout |
-| Protected endpoints | 401 without token, 200 with valid token |
-| Soft deletes | `DELETE /expenses/<pk>/` sets `is_deleted=True`, not removed from DB |
-| Filters | Amount ranges, date ranges, category/profile filters |
-| Analytics views | Monthly and summary views return correct aggregations |
-| Cross-user isolation | User A cannot access User B's profiles/expenses |
+| Serializers | Positive-amount validation, ownership checks on profile/category references |
+| Auth flow | Register → auto-login → token refresh → logout |
+| Protected endpoints | `401` without token; `200` with valid token |
+| Signals | Expense create debits profile balance; income create credits it |
+| Soft deletes | `DELETE /expenses/<pk>/` sets `is_deleted=True`; record still in DB |
+| Filters | Amount ranges, date ranges, `is_paid` for debts |
+| Analytics views | Monthly and summary endpoints return correct aggregated values |
+| Cross-user isolation | User A cannot read or modify User B's data |
 
----
+### Recommended Frontend Test Coverage
 
-## Recommended Frontend Integration
-
-When building a frontend against this API:
-
-- Store the `access` token in memory; store `refresh` in an `httpOnly` cookie for security
-- Attach `Authorization: Bearer <token>` to every protected request
-- Handle `401 Unauthorized` by attempting a token refresh, then retry
-- Ensure `CORS_ALLOWED_ORIGINS` includes your frontend's exact origin (with port if needed)
-- Respect soft-deleted records — filter `is_deleted=false` on client side or ensure the API does so
-
-### Suggested Frontend Route Map
-
-| Route | Component |
+| Area | What to Test |
 |---|---|
-| `/login` | Login page |
-| `/register` | Registration page |
-| `/dashboard` | Overview — net balance, totals, recent transactions |
-| `/profiles` | List of financial profiles |
-| `/profiles/:id` | Profile detail, monthly summary |
-| `/profiles/:id/monthly/:year/:month` | Detailed monthly report |
-| `/categories` | Manage categories |
-| `/expenses` | Expenses list with filters |
-| `/incomes` | Incomes list |
-| `/debts` | Debts list |
+| Route guards | Unauthenticated users redirected to `/login` |
+| Auth flow | Login stores tokens; logout clears them |
+| Token interceptor | 401 triggers refresh + request replay |
+| FinanceContext | Mutations call correct API endpoints and trigger re-fetches |
+| Dashboard | Correct totals rendered from mock API response |
 
 ---
 
-*Documentation generated from `context.json` — keep updated as models and endpoints evolve.*
+## 16. Known Issues & Notes
+
+| # | Area | Note |
+|---|---|---|
+| 1 | Token Refresh | The frontend interceptor calls `/token/refresh/`, but this endpoint is not explicitly declared in `backend/urls.py`. It relies on SimpleJWT's default inclusion. Verify it is reachable in production before deploying. |
+| 2 | Debt Signals | Signal handlers for `Debt` are intentionally no-ops — debts do not affect profile balances by design. |
+| 3 | Backend Tests | `api/tests.py` is a placeholder. No tests are implemented yet. |
+| 4 | CORS | `CORS_ALLOW_ALL_ORIGINS=True` is set in current backend settings (all origins allowed). Restrict this to the frontend domain before going to production. |
+| 5 | Soft Delete & Balance | Soft-deleting an expense does **not** reverse the profile balance debit. Only hard deletes trigger signal reversal. This can cause balance drift if soft-deleted records are common. |
+
+---
+
+*Documentation covers both `backend/` and `frontend/` as of the current codebase snapshot. Keep updated when models, endpoints, or frontend routes change.*
