@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, Menu, LogOut, User as UserIcon, Calendar } from 'lucide-react';
+import { Bell, Menu, LogOut, User as UserIcon, Calendar, Check } from 'lucide-react';
 import { useFinance } from '../../FinanceContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency, cn } from '../../lib/utils';
