@@ -20,6 +20,7 @@ from django.urls import include, path
 from django.http import HttpResponse
 
 urlpatterns = [
+    path('', lambda r: HttpResponse("DigiKatib Backend OK")),
     path('health/', lambda r: HttpResponse("OK")),
     path('', include('api.urls')),
     path('admin/', admin.site.urls),
