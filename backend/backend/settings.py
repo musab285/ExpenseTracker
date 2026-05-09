@@ -24,13 +24,37 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)z=&i+!aie8*gr$k*y@c_$bhvap-&pcplpmsrs_3r04m#nll8s'
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'  # Default to True for development
 
-ALLOWED_HOSTS = ["*"] 
+# SECURITY WARNING: keep the secret key used in production secret!
+# For production, generate a secure key with:
+# python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+# Then set via SECRET_KEY environment variable
+SECRET_KEY = os.getenv('SECRET_KEY', 'development-key-not-for-production-7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d')
+if not DEBUG and (not SECRET_KEY or SECRET_KEY.startswith('development-key-')):
+    raise ValueError("SECRET_KEY must be a secure value in production")
+
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+# Security Settings (Production vs Development)
+# For local development: run `$env:DEBUG='False'; python manage.py check --deploy` to test production settings
+if not DEBUG:
+    # Production: HTTPS/SSL required
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    # Development: Allow HTTP (warnings are expected locally)
+    SECURE_SSL_REDIRECT = False
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False 
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -69,6 +93,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -151,7 +176,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -161,8 +188,10 @@ AUTH_USER_MODEL = 'api.User'
 
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    origin.strip() for origin in os.getenv(
+        'CORS_ALLOWED_ORIGINS',
+        'http://localhost:3000,http://127.0.0.1:3000'
+    ).split(',')
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
